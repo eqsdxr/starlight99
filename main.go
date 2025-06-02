@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var cliName string = "gotrain"
+var cliName string = "starlight99"
 
 var Reset = "\033[0m"
 var Red = "\033[31m"
@@ -22,64 +22,169 @@ var Cyan = "\033[36m"
 var Gray = "\033[37m"
 var White = "\033[97m"
 
+var initialName = "AnonymousPlayer"
+
 type Expression struct {
-	f, s, r int
+	first, second, result int
+}
+
+type Enemy struct {
+	ascii string
+	hp, damage int
+}
+
+var commands = map[string]any{
+	".help": func() {
+		fmt.Println(helpMessage)
+	},
+	".exit": exitGame,
 }
 
 func main() {
-	showMenu(0)
-	fmt.Println()
-	showMenu(1)
-	return
-	commands := map[string]any{
-		".help": printHelp,
-	}
-	exp := nextExpression()
-	reader := bufio.NewScanner(os.Stdin)
-	printHelp()
-	fmt.Println(exp.f, "x", exp.s, "= ???")
-	printPrompt()
-	for reader.Scan() {
-		input := cleanInput(reader.Text())
-		if input == "" {
-			continue
-		} else if strings.EqualFold(".exit", input) {
-			return
-		} else if number, err := strconv.Atoi(input); err == nil {
-			if number != exp.r {
-				fmt.Println(exp.f, "x", exp.s, "= ???")
+
+	config := getConfig(configPath)
+	scanner := bufio.NewScanner(os.Stdin)
+
+	// Starting menu
+
+	// 1 start menu
+	// 2 choosing game mode
+	// 3 playing adventure mode
+	// 5 playing company mode
+	// 4 settings
+	// 6 exiting
+	state := 1
+	var input int
+
+	for {
+		switch state {
+		case 1:
+			fmt.Println(logo, starDevil, startingMenu)
+			input = getIntInput(scanner)
+			switch input {
+			case 1:
+				state = 2
+			case 2:
+				state = 4
+			case 3:
+				state = 6
 			}
-		} else if command, exists := commands[input]; exists {
-			command.(func())()
-		} else {
-			handleCmd(input)
+		case 2:
+			fmt.Println(gameModeMenu)
+			input = getIntInput(scanner)
+			switch input {
+			case 1:
+				state = 3
+			case 2:
+			case 3:
+				state = 1
+			}
+		case 3:
+			fmt.Println()
+			input = getIntInput(scanner)
+		case 4:
+			fmt.Println(settingsMenu)
+			input = getIntInput(scanner)
+			switch input {
+			case 3:
+				fmt.Printf("\n%v\n", config)
+			case 5:
+				state = 1
+			}
+		case 6:
+			fmt.Println(reallyWannaExit)
+			input = getIntInput(scanner)
+			switch input {
+			case 1:
+				fmt.Println(exitMessage)
+				os.Exit(0)
+			case 2:
+				state = 1
+			}
 		}
-		clearScreen()
-		printArbitraryAmountOfNewLines(30)
-		exp = nextExpression()
-		fmt.Println(exp.f, "x", exp.s, "= ???")
-		printPrompt()
 	}
+
+	// fmt.Println(exp.first, "x", exp.second, "= ???")
 }
 
-func showMenu(state int) {
-	switch state {
-	case 0:
-		fmt.Println("Welcome to ", cliName, ", my dear wanderer! Choose an option:")
-		fmt.Println("1. Play ", cliName)
-		fmt.Println("2. Settings")
-		fmt.Println("3. Exit ", cliName)
-	case 1:
-		fmt.Println("Choose the difficulty level:")
-		fmt.Println()
-		fmt.Println("1.  " + Green + "Easy" + Reset)
-		fmt.Println("2.  " + Yellow + "Medium " + Reset)
-		fmt.Println("3.  " + Red + "Hard" + Reset)
-		fmt.Println("4.  " + Magenta + "Very Hard" + Reset)
-		fmt.Println()
-	default:
-		fmt.Println(Red + "Critical error! Incorrect state number was passed to showMenu function!" + Red)
+func getStrInput(scanner *bufio.Scanner) string {
+	printPrompt()
+	for scanner.Scan() {
+		input := cleanInput(scanner.Text())
+		if input[0] == '.' {
+			if command, exists := commands[input]; exists {
+				command.(func())()
+			}
+		} else {
+			return input
+		}
+		printPrompt()
 	}
+	// This normally should not happen
+	return ""
+}
+
+func nextMonster() 
+
+func getIntInput(scanner *bufio.Scanner) int {
+	printPrompt()
+	for scanner.Scan() {
+		input := cleanInput(scanner.Text())
+		if number, err := strconv.Atoi(input); err == nil {
+			return number
+		} else if input[0] == '.' {
+			if command, exists := commands[input]; exists {
+				command.(func())()
+			}
+		} else {
+			fmt.Println("???")
+		}
+		printPrompt()
+	}
+	// This normally should not happen
+	return 0
+}
+
+func exitGame() {
+
+}
+
+func Settings() {
+
+}
+
+func initGame(config Config) {
+
+}
+
+func runGame(config Config) {
+	// exp := nextExpression()
+}
+
+func getConfig(path string) Config {
+	config, err := readConfig(path)
+	if err != nil {
+		// User runs game without config
+		initialConfig := Config{
+			PlayerName: initialName,
+			TotalScore: 0,
+		}
+		// Try to save
+		err = saveConfig(initialConfig, path)
+		if err != nil {
+			panic("Cannot save config file")
+		}
+		// Read again to make sure that everything is OK
+		config, err = readConfig(path)
+		if err != nil {
+			panic("Cannot read config file")
+		}
+	}
+	return config
+}
+
+func getRandomAsciiArt() {
+	return
 }
 
 func flushStdin() {
@@ -87,7 +192,7 @@ func flushStdin() {
 	fmt.Scanln(&discard)
 }
 
-func startAdventureMode(difficulty int) {
+func startAdventureMode() {
 
 }
 
@@ -107,34 +212,15 @@ func clearScreen() {
 	cmd.Run()
 }
 
-
 func nextExpression() Expression {
 	f := rand.Intn(89) + 10
 	s := rand.Intn(89) + 10
 	f = 10
 	s = 10
 	exp := Expression{
-		f, s, f*s,
+		f, s, f * s,
 	}
 	return exp
-}
-
-func printUnknown(text string) {
-	fmt.Println(text, ": command not found")
-}
-
-func printHelp() {
-	fmt.Println("Available commands:")
-	fmt.Println("\\help - show this text")
-	fmt.Println("\\exit - exit the program")
-}
-
-func handleInvalidCmd(text string) {
-	printUnknown(text)
-}
-
-func handleCmd(text string) {
-	handleInvalidCmd(text)
 }
 
 func cleanInput(text string) string {
