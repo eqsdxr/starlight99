@@ -21,6 +21,8 @@ var commands = map[string]any{
 
 func main() {
 
+	clearScreen()
+
 	config := getConfig(configPath)
 	scanner := bufio.NewScanner(os.Stdin)
 
