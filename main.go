@@ -140,7 +140,7 @@ func getStrInput(scanner *bufio.Scanner) string {
 func getNextMonster(totalScore int) Monster {
 	chosenGroup := monsters1
 	if totalScore > 1000 {
-		chosenGroup = monsters5
+		chosenGroup = monsters3
 	} else if totalScore > 300 {
 	}
 	chosenMonster := chosenGroup[rand.Intn(len(chosenGroup))]
