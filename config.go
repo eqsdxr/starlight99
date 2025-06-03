@@ -37,42 +37,42 @@ var (
 	White = "\033[97m"
 
 	startingMenu string = `
-	Welcome to Starlight99 my dear wanderer! Choose an option:
-	1. Play
-	2. Settings
-	3. Exit
-	`
+Welcome to Starlight99 my dear wanderer! Choose an option:
+1. Play
+2. Settings
+3. Exit
+`
 	reallyWannaExit string = `
-	Do you want to exit the game?
-	1. Yes
-	2. No
+Do you want to exit the game?
+1. Yes
+2. No
 	`
 	exitMessage string = `
-	Exiting...
+Exiting...
 	`
 	gameModeMenu string = `
-	Choose the game mode:
-	1. Adventure
-	2. Company
-	3. Go back
+Choose the game mode:
+1. Adventure
+2. Company
+3. Go back
 	`
 	changingCharacterName string = `
-	Write new name for your character:
+Write new name for your character:
 	`
 	settingsMenu string = `
-	1. Change the character's name
-	2. Change config file location
-	3. View stats
-	4. About
-	5. Go back
+1. Change the character's name
+2. Change config file location
+3. View stats
+4. About
+5. Go back
 	`
 	helpMessage string = `
-	Available commands:
-	\\help - show this text
-	\\exit - exit the program
+Available commands:
+\\help - show this text
+\\exit - exit the program
 	`
 	startingAdventureModeText string = `
-	You're starting an adventure mode.
+You're starting an adventure mode.
 	`
 
 	monsters1 = []rawMonster{bearMonster, batMonster, scorpionMonster, spiderMonster, ravenMonster}
