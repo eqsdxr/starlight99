@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 )
 
 var commands = map[string]any{
@@ -224,4 +226,19 @@ func cleanInput(text string) string {
 	output := strings.TrimSpace(text)
 	output = strings.ToLower(output)
 	return output
+}
+
+func saveConfig(cfg Config, path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return toml.NewEncoder(f).Encode(cfg)
+}
+
+func readConfig(path string) (Config, error) {
+	var cfg Config
+	_, err := toml.DecodeFile(path, &cfg)
+	return cfg, err
 }
