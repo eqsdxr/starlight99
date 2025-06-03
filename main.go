@@ -10,29 +10,6 @@ import (
 	"strings"
 )
 
-var cliName string = "starlight99"
-
-var Reset = "\033[0m"
-var Red = "\033[31m"
-var Green = "\033[32m"
-var Yellow = "\033[33m"
-var Blue = "\033[34m"
-var Magenta = "\033[35m"
-var Cyan = "\033[36m"
-var Gray = "\033[37m"
-var White = "\033[97m"
-
-var initialName = "AnonymousPlayer"
-
-type Expression struct {
-	first, second, result int
-}
-
-type Enemy struct {
-	ascii string
-	hp, damage int
-}
-
 var commands = map[string]any{
 	".help": func() {
 		fmt.Println(helpMessage)
@@ -50,8 +27,8 @@ func main() {
 	// 1 start menu
 	// 2 choosing game mode
 	// 3 playing adventure mode
-	// 5 playing company mode
 	// 4 settings
+	// 5 playing company mode
 	// 6 exiting
 	state := 1
 	var input int
@@ -80,6 +57,13 @@ func main() {
 				state = 1
 			}
 		case 3:
+			if config.TotalScore <= 0 {
+				fmt.Println(startingAdventureModeText)
+			}
+			adventureMode(config, scanner)
+			switch input {
+
+			}
 			fmt.Println()
 			input = getIntInput(scanner)
 		case 4:
@@ -103,12 +87,39 @@ func main() {
 			}
 		}
 	}
+}
 
-	// fmt.Println(exp.first, "x", exp.second, "= ???")
+func adventureMode(config Config, scanner *bufio.Scanner) {
+	monster := getNextMonster(config.TotalScore)
+	exp := nextExpression()
+	fmt.Println(*monster.ascii, "You see a", *monster.name)
+	fmt.Println("Health: ", monster.hp)
+	var input int
+	for input != -1 {
+		fmt.Println("You attack: ", exp.first, "x", exp.second)
+		input := getIntInput(scanner)
+		if input == exp.result {
+			monster.hp -= input
+		} else {
+			fmt.Println("You got ", input, " of damage!")
+		}
+		if monster.hp < 1 {
+			fmt.Println("The monster is elliminated!")
+		} else {
+			fmt.Println("Health: ", monster.hp)
+			exp = nextExpression()
+		}
+	}
+}
+
+// Returns to the starting menu
+func exitGame() {
+
 }
 
 func getStrInput(scanner *bufio.Scanner) string {
-	printPrompt()
+	// Print prompt
+	fmt.Print(cliName, "> ")
 	for scanner.Scan() {
 		input := cleanInput(scanner.Text())
 		if input[0] == '.' {
@@ -118,16 +129,34 @@ func getStrInput(scanner *bufio.Scanner) string {
 		} else {
 			return input
 		}
-		printPrompt()
+		// Print prompt
+		fmt.Print(cliName, "> ")
 	}
 	// This normally should not happen
 	return ""
 }
 
-func nextMonster() 
+// Get next monster by considering totalScore
+func getNextMonster(totalScore int) Monster {
+	chosenGroup := monsters1
+	if totalScore > 1000 {
+		chosenGroup = monsters5
+	} else if totalScore > 300 {
+	}
+	chosenMonster := chosenGroup[rand.Intn(len(chosenGroup))]
+	resultedMonster := Monster{
+		&chosenMonster.ascii,
+		&chosenMonster.name,
+		rand.Intn(chosenMonster.hpMax-chosenMonster.hpMin) + chosenMonster.hpMin,
+		chosenMonster.damageMin,
+		chosenMonster.hpMax,
+	}
+	return resultedMonster
+}
 
 func getIntInput(scanner *bufio.Scanner) int {
-	printPrompt()
+	// Print prompt
+	fmt.Print(cliName, "> ")
 	for scanner.Scan() {
 		input := cleanInput(scanner.Text())
 		if number, err := strconv.Atoi(input); err == nil {
@@ -139,26 +168,11 @@ func getIntInput(scanner *bufio.Scanner) int {
 		} else {
 			fmt.Println("???")
 		}
-		printPrompt()
+		// Print prompt
+		fmt.Print(cliName, "> ")
 	}
 	// This normally should not happen
 	return 0
-}
-
-func exitGame() {
-
-}
-
-func Settings() {
-
-}
-
-func initGame(config Config) {
-
-}
-
-func runGame(config Config) {
-	// exp := nextExpression()
 }
 
 func getConfig(path string) Config {
@@ -183,27 +197,10 @@ func getConfig(path string) Config {
 	return config
 }
 
-func getRandomAsciiArt() {
-	return
-}
-
-func flushStdin() {
-	var discard string
-	fmt.Scanln(&discard)
-}
-
-func startAdventureMode() {
-
-}
-
 func printArbitraryAmountOfNewLines(amount int) {
 	for range amount {
 		fmt.Println()
 	}
-}
-
-func printPrompt() {
-	fmt.Print(cliName, "> ")
 }
 
 func clearScreen() {
