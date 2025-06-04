@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/BurntSushi/toml"
 )
@@ -19,20 +20,23 @@ func main() {
 	config := getConfig(configPath)
 	scanner := bufio.NewScanner(os.Stdin)
 
-	// Starting menu
-
-	// 1 start menu
+	// 0 start menu with logo
+	// 1 start menu without logo
 	// 2 choosing game mode
 	// 3 playing adventure mode
 	// 4 settings
 	// 6 exiting
-	state := 1
+	// 7 tutorial
+	state := 0
 	var input int
 
 	for {
 		switch state {
+		case 0:
+			fmt.Println(logo, starDevil, welcomeMessage)
+			state = 1
 		case 1:
-			fmt.Println(logo, starDevil, startingMenu)
+			fmt.Println(startingMenu)
 			input = getInput(scanner)
 			switch input {
 			case 1:
@@ -49,12 +53,13 @@ func main() {
 			case 1:
 				state = 3
 			case 2:
+				state = 7
 			case 3:
 				state = 1
 			}
 		case 3:
 			if config.TotalScore <= 1 {
-				showTutorial(config, scanner)
+				showTutorial(&config, scanner)
 			}
 			res := playGame(&config, scanner)
 			switch res {
@@ -80,11 +85,15 @@ func main() {
 			case 2:
 				state = 1
 			}
+		case 7:
+			showTutorial(&config, scanner)
+			state = 2
 		}
 	}
 }
 
-func showTutorial(config Config, scanner *bufio.Scanner) {
+func showTutorial(config *Config, scanner *bufio.Scanner) {
+	// Print tutorial text and wait until user triggers <Enter>
 	fmt.Println(tutorial1(config.PlayerName))
 	getInput(scanner)
 	fmt.Println(tutorial2)
@@ -98,48 +107,46 @@ func showTutorial(config Config, scanner *bufio.Scanner) {
 
 func playGame(config *Config, scanner *bufio.Scanner) int {
 	monster := getNextMonster(config.TotalScore)
-	exp := nextExpression()
-	playerHealth := config.TotalScore * 10
-	fmt.Println(*monster.ascii, "\nYou see a", *monster.name, "\nMonster's health: ",
-		monster.hp, "\nYour health: ", playerHealth,
-	)
+	fmt.Printf("%s\nYou see a %s.", *monster.ascii, *monster.name)
+	playerHealth := setPlayerHealth(config.TotalScore)
 	var input int
+	var exp Expression
 	for input != -1 {
-		fmt.Println("You attack: ", exp.first, "x", exp.second)
+		exp = nextExpression()
+		fmt.Printf("\nThe monster's health: %d\nYour health: %d\nYou attack: %d x %d",
+			monster.hp, playerHealth, exp.first, exp.second,
+		)
 		input := getInput(scanner)
 		if input == exp.result {
 			monster.hp -= exp.result
 		} else {
-			fmt.Println("You got ", input, " of damage!")
-			playerHealth -= input
+			playerHealth -= exp.result
+			fmt.Println(Red + "\nYou got ", exp.result, " of damage!" + Reset)
 			if playerHealth < 1 {
-				fmt.Println("You got killed!")
+				fmt.Printf("%s\n\n", death)
 				return 1
 			}
 		}
 		if monster.hp < 1 {
-			fmt.Println("The monster is elliminated!")
+			fmt.Printf("\n\nThe monster is elliminated!")
 			config.TotalScore += 1
 			saveConfig(config, configPath)
-			fmt.Println("Your total score was increased and now it's ", config.TotalScore)
-			monster := getNextMonster(config.TotalScore)
-			exp = nextExpression()
-			playerHealth = config.TotalScore * 10
-			fmt.Println(*monster.ascii, "\nYou see a", *monster.name, "\nMonster's health: ",
-				monster.hp, "\nYour health: ", playerHealth,
-			)
-		} else {
-			fmt.Println("Monster's health: ", monster.hp)
-			fmt.Println("Your health: ", playerHealth)
-			exp = nextExpression()
+			fmt.Printf(Green + "\n\nYour total score was increased and now it equals %d" + Reset, config.TotalScore)
+			monster = getNextMonster(config.TotalScore)
+			playerHealth = setPlayerHealth(config.TotalScore)
+			fmt.Printf("%s\nYou see a %s.", *monster.ascii, *monster.name)
 		}
 	}
 	return 0
 }
 
-// Returns to the starting menu
-func exitGame() {
-
+func setPlayerHealth(totalScore int) int {
+	// Decrease player's health
+	// Kinda a rudimentary formula but whatever
+	playerHealth := 50000 - totalScore * 100
+	// Prevent it go below 1000
+	playerHealth = max(playerHealth, 1000)
+	return playerHealth
 }
 
 // func handleEvent() Event {}
@@ -167,13 +174,25 @@ func getNextMonster(totalScore int) Monster {
 
 // Only for int (it's done on purpose)
 func getInput(scanner *bufio.Scanner) int {
-	// Print prompt
 	fmt.Print(promptLine)
 	scanner.Scan()
-	input := cleanInput(scanner.Text())
+
+	input := strings.TrimSpace(scanner.Text())
+
+	// Remove all non-digits in case user accidently
+	// triggers "\", "]", etc., instead of <Enter>
+	var b strings.Builder
+	for _, r := range input {
+		if unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	input = b.String()
+
 	if number, err := strconv.Atoi(input); err == nil {
 		return number
 	}
+	// Only digits are allowed
 	return 0
 }
 
@@ -199,12 +218,6 @@ func getConfig(path string) Config {
 	return config
 }
 
-func printArbitraryAmountOfNewLines(amount int) {
-	for range amount {
-		fmt.Println()
-	}
-}
-
 func clearScreen() {
 	cmd := exec.Command("clear")
 	cmd.Stdout = os.Stdout
@@ -214,18 +227,11 @@ func clearScreen() {
 func nextExpression() Expression {
 	f := rand.Intn(89) + 10
 	s := rand.Intn(89) + 10
-	f = 10
-	s = 10
+	f, s = 100, 100
 	exp := Expression{
 		f, s, f * s,
 	}
 	return exp
-}
-
-func cleanInput(text string) string {
-	output := strings.TrimSpace(text)
-	output = strings.ToLower(output)
-	return output
 }
 
 func saveConfig(cfg *Config, path string) error {

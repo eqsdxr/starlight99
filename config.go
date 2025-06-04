@@ -57,14 +57,17 @@ var (
 
 	promptLine string = fmt.Sprintf("\n\n%s> ", cliName)
 
+	welcomeMessage string = `
+Welcome to Starlight99 my dear wanderer!
+`
 	startingMenu string = `
-Welcome to Starlight99 my dear wanderer! Choose an option:
+Choose an option:
 1. Play
 2. Settings
 3. Exit
 `
 	reallyWannaExit string = `
-Do you want to exit the game?
+Do you really want to exit?
 1. Yes
 2. No
 `
@@ -78,11 +81,13 @@ Choose the game mode:
 3. Go back
 `
 
-	tutorial1 = func(playerName int) string { return fmt.Sprintf(
-"\n\n" + `Hello %d, Welcome to %s!` +
-"\n\n" + `This is a short tutorial before you start.` +
-"\n\n" + `To continue, press <Enter>`, playerName, cliName,
-)}
+	tutorial1 = func(playerName int) string {
+		return fmt.Sprintf(
+			"\n\n"+`Hello %d, Welcome to %s!`+
+				"\n\n"+`This is a short tutorial before you start.`+
+				"\n\n"+`To continue, press <Enter>`, playerName, cliName,
+		)
+	}
 
 	tutorial2 string = `
 On your journey, you have fought countless monsters. You're
@@ -173,6 +178,37 @@ You're starting an adventure mode.
 	      ░                 ░  ░   ░         ░  ░ ░        ░  ░  ░  ░
 	
 	` + Reset
+
+	// https://www.asciiart.eu/mythology/skeletons
+	death string = `
+
+                           ,--.
+                          {    }
+                          K,   }
+                         /  'Y'
+                    _   /   /
+                   {_'-K.__/
+                     '/-.__L._
+                     /  ' /'\_}
+                    /  ' /     -ART BY ZEUS-
+            ____   /  ' /
+     ,-'~~~~    ~~/  ' /_
+   ,'             ''~~~%%',
+  (                     %  Y
+ {                      %% I
+{      -                 %  '.
+|       ',                %  )
+|        |   ,..__      __. Y
+|    .,_./  Y ' / ^Y   J   )|
+\           |' /   |   |   ||    You got killed!
+ \          L_/    . _ (_,.'(
+  \,   ,      ^^""' / |      )
+    \_  \          /,L]     /
+      '-_'-,       ' '   ./'
+         '-(_            )
+             ^^\..___,.--'
+
+`
 
 	// https://www.asciiart.eu/mythology/devils
 	starDevil string = `
@@ -412,7 +448,7 @@ You're starting an adventure mode.
 	     //'',.\_    .\\      ,{==>-
 	  __//   __;_'-  \ ';.__,;'
 	((,--,) (((,------;  '--' jv
-	'''  '   '''
+	'''  '   ''',
 	
 	`
 
@@ -434,79 +470,79 @@ You're starting an adventure mode.
 
 	// https://www.asciiart.eu/animals/spiders
 	spider string = `
-	
-	              (
-	               )
-	              (
-	        /\  .-"""-.  /\
-	       //\\/  ,,,  \//\\
-	       |/\| ,;;;;;, |/\|
-	       //\\\;-"""-;///\\
-	      //  \/   .   \/  \\
-	     (| ,-_| \ | / |_-, |)
-	       //'__\.-.-./__'\\
-	      // /.-(() ())-.\ \\
-	     (\ |)   '---'   (| /)
-	      ' (|           |) '
-	jgs     \)           (/'
-	
+
+              (
+               )
+              (
+        /\  .-"""-.  /\
+       //\\/  ,,,  \//\\
+       |/\| ,;;;;;, |/\|
+       //\\\;-"""-;///\\
+      //  \/   .   \/  \\
+     (| ,-_| \ | / |_-, |)
+       //'__\.-.-./__'\\
+      // /.-(() ())-.\ \\
+     (\ |)   '---'   (| /)
+      ' (|           |) '
+jgs     \)           (/'
+
 	`
 
 	// https://www.asciiart.eu/animals/bears
 	bear string = `
-	
-	     (()__(()
-	     /       \
-	    ( /    \  \
-	     \ o o    /
-	     (_()_)__/ \
-	    / _,==.____ \
-	   (   |--|      )
-	   /\_.|__|'-.__/\_
-	  / (        /     \
-	  \  \      (      /
-	   )  '._____)    /
-	(((____.--(((____/mrf
-	
+
+     (()__(()
+     /       \
+    ( /    \  \
+     \ o o    /
+     (_()_)__/ \
+    / _,==.____ \
+   (   |--|      )
+   /\_.|__|'-.__/\_
+  / (        /     \
+  \  \      (      /
+   )  '._____)    /
+(((____.--(((____/mrf
+
 	`
 
 	// https://www.asciiart.eu/animals/scorpions
 	scorpion string = `
-	
-		      ( _<    >_ )
-		      //        \\
-		      \\___..___//
-		       '-(    )-'
-		         _|__|_
-		        /_|__|_\
-		        /_|__|_\
-		        /_\__/_\
-		         \ || /  _)
-		           ||   ( )
-		      Max  \\___//
-		            '---'
-	
+
+      ( _<    >_ )
+      //        \\
+      \\___..___//
+       '-(    )-'
+         _|__|_
+        /_|__|_\
+        /_|__|_\
+        /_\__/_\
+         \ || /  _)
+           ||   ( )
+      Max  \\___//
+            '---'
+
 	`
 
 	// https://www.asciiart.eu/animals/bats
 	bat string = `
-	
-		       (_    ,_,    _)
-		       / ''--) (--'' \
-		      /  _,-'\_/'-,_  \
-		jgs  /.-'     "     '-.\
-		
+
+       (_    ,_,    _)
+       / ''--) (--'' \
+      /  _,-'\_/'-,_  \
+jgs  /.-'     "     '-.\
+
 	`
 
 	// https://www.asciiart.eu/mythology/phoenix
 	raven string = `
-	
-	   _,="( _  )"=,_
-	_,'    \_>\_/    ',_
-	.7,     {  }     ,\.
-	 '/:,  .m  m.  ,:\'
-	   ')",(/  \),"('
-	      '{'!!'}'      -???
-	
+
+   _,="( _  )"=,_
+_,'    \_>\_/    ',_
+.7,     {  }     ,\.
+ '/:,  .m  m.  ,:\'
+   ')",(/  \),"('
+      '{'!!'}'      -???
+
 	`
 )
