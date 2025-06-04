@@ -60,7 +60,7 @@ var (
 	welcomeMessage string = `
 Welcome to Starlight99 my dear wanderer!
 `
-	startingMenu string = `
+	startingMenu string = "\n\n" + `
 Choose an option:
 1. Play
 2. Settings
@@ -142,23 +142,23 @@ Write new name for your character (numbers only):
 		return append(all, monsters3...)
 	}
 
-	starDevilMonster = rawMonster{starDevil, "Star Devil", 100000, 100000, 100000, 100000}
-	skeletonMonster  = rawMonster{skeleton, "Skeleton", 40000, 70000, 15000, 30000}
-	dragonMonster    = rawMonster{dragon, "Dragon", 10000, 30000, 5000, 7000}
-	foxMonster       = rawMonster{fox, "Fox", 5000, 10000, 1000, 5000}
+	starDevilMonster = rawMonster{starDevil, "Star Devil", 10000, 12000, 500, 1000}
+	skeletonMonster  = rawMonster{skeleton, "Skeleton", 8000, 10000, 400, 800}
+	dragonMonster    = rawMonster{dragon, "Dragon", 7000, 9000, 350, 700}
+	foxMonster       = rawMonster{fox, "Fox", 6000, 8000, 300, 600}
+	
+	devilMonster      = rawMonster{devil, "Devil", 3000, 5000, 200, 400}
+	phoenixMonster    = rawMonster{phoenix, "Phoenix", 3000, 5000, 200, 400}
+	unicornMonster    = rawMonster{unicorn, "Unicorn", 3000, 5000, 200, 400}
+	grimReaperMonster = rawMonster{grimReaper, "Grim Reaper", 3200, 5200, 220, 450}
+	gryphonMonster    = rawMonster{gryphon, "Gryphon", 3400, 5400, 250, 470}
+	centaurMonster    = rawMonster{centaur, "Centaur", 3500, 5500, 250, 500}
 
-	devilMonster      = rawMonster{devil, "Devil", 40000, 70000, 15000, 30000}
-	phoenixMonster    = rawMonster{phoenix, "Phoenix", 40000, 70000, 15000, 30000}
-	unicornMonster    = rawMonster{unicorn, "Unicorn", 40000, 70000, 15000, 30000}
-	grimReaperMonster = rawMonster{grimReaper, "Grim Reaper", 40000, 70000, 15000, 30000}
-	gryphonMonster    = rawMonster{gryphon, "Gryphon", 40000, 70000, 15000, 30000}
-	centaurMonster    = rawMonster{centaur, "Centaur", 40000, 70000, 15000, 30000}
-
-	spiderMonster   = rawMonster{spider, "Spider", 500, 1500, 70, 120}
-	bearMonster     = rawMonster{bear, "Bear", 2000, 5000, 200, 400}
-	scorpionMonster = rawMonster{scorpion, "Scorpion", 150, 350, 30, 70}
-	ravenMonster    = rawMonster{raven, "Raven", 40000, 70000, 15000, 30000}
-	batMonster      = rawMonster{bat, "Bat", 50, 150, 5, 15}
+	bearMonster     = rawMonster{bear, "Bear", 600, 900, 40, 80}
+	spiderMonster   = rawMonster{spider, "Spider", 300, 500, 20, 40}
+	scorpionMonster = rawMonster{scorpion, "Scorpion", 200, 400, 15, 30}
+	ravenMonster    = rawMonster{raven, "Raven", 150, 300, 10, 20}
+	batMonster      = rawMonster{bat, "Bat", 100, 200, 5, 10}
 
 	// https://patorjk.com/software/taag/#p=display&f=ANSI%20Regular&t=
 	logo string = Red + `
@@ -176,7 +176,7 @@ Write new name for your character (numbers only):
 	` + Reset
 
 	// https://www.asciiart.eu/mythology/skeletons
-	death string = `
+	death string = `\n\n
 
                            ,--.
                           {    }
@@ -208,7 +208,6 @@ Write new name for your character (numbers only):
 
 	// https://www.asciiart.eu/mythology/devils
 	starDevil string = `
-	
 	            ._                                            ,
 	             (')..                                    ,.-')
 	              (',.)-..                            ,.-(..')
@@ -233,7 +232,6 @@ Write new name for your character (numbers only):
 	                                 \~ | V             - JGG
 	                                  \  |
 	                                   VV
-	
 	`
 
 	// https://www.asciiart.eu/mythology/skeletons
@@ -276,12 +274,10 @@ Write new name for your character (numbers only):
 	                                             |  \
 	                                             |lllj
 	                                             |||||  -nabis
-	
 	`
 
 	// https://www.asciiart.eu/mythology/dragons
 	dragon string = `
-	
 	                 ___====-_  _-====___
 	           _--^^^#####//      \\#####^^^--_
 	        _-^##########// (    ) \\##########^-_
@@ -297,9 +293,8 @@ Write new name for your character (numbers only):
 	   '   '  '      '   / | |  | | \   '      '  '   '
 	                    (  | |  | |  )
 	                   __\ | |  | | /__
-	                  (vvv(VVV)(VVV)vvv)
-	                                                -???
-	`
+	                  (vvv(VVV)(VVV)vvv)           -???
+`
 
 	// https://emojicombos.com/kawaii-anime-girl-ascii-art
 	fox string = `

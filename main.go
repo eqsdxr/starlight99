@@ -137,6 +137,7 @@ func playGame(config *Config, scanner *bufio.Scanner) int {
 			fmt.Printf("%s\nYou see a %s.", *monster.ascii, *monster.name)
 		}
 	}
+	fmt.Printf("\n\nYou left")
 	return 0
 }
 
