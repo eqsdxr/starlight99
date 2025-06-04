@@ -76,7 +76,7 @@ Exiting...
 `
 	gameModeMenu string = `
 Choose the game mode:
-1. Adventure
+1. Adventure Mode
 2. Show tutorial
 3. Go back
 `
@@ -131,10 +131,6 @@ Write new name for your character (numbers only):
 3. View stats
 4. About
 5. Go back
-`
-
-	startingAdventureModeText string = `
-You're starting an adventure mode.
 `
 
 	monsters1 = []rawMonster{bearMonster, batMonster, scorpionMonster, spiderMonster, ravenMonster}
