@@ -12,13 +12,6 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-var commands = map[string]any{
-	".help": func() {
-		fmt.Println(helpMessage)
-	},
-	".exit": exitGame,
-}
-
 func main() {
 
 	clearScreen()
@@ -32,7 +25,6 @@ func main() {
 	// 2 choosing game mode
 	// 3 playing adventure mode
 	// 4 settings
-	// 5 playing company mode
 	// 6 exiting
 	state := 1
 	var input int
@@ -41,7 +33,7 @@ func main() {
 		switch state {
 		case 1:
 			fmt.Println(logo, starDevil, startingMenu)
-			input = getIntInput(scanner)
+			input = getInput(scanner)
 			switch input {
 			case 1:
 				state = 2
@@ -52,7 +44,7 @@ func main() {
 			}
 		case 2:
 			fmt.Println(gameModeMenu)
-			input = getIntInput(scanner)
+			input = getInput(scanner)
 			switch input {
 			case 1:
 				state = 3
@@ -61,18 +53,17 @@ func main() {
 				state = 1
 			}
 		case 3:
-			if config.TotalScore <= 0 {
-				fmt.Println(startingAdventureModeText)
+			if config.TotalScore <= 1 {
+				showTutorial(config, scanner)
 			}
-			adventureMode(config, scanner)
-			switch input {
-
+			res := playGame(&config, scanner)
+			switch res {
+			case 1:
+				state = 1
 			}
-			fmt.Println()
-			input = getIntInput(scanner)
 		case 4:
 			fmt.Println(settingsMenu)
-			input = getIntInput(scanner)
+			input = getInput(scanner)
 			switch input {
 			case 3:
 				fmt.Printf("\n%v\n", config)
@@ -81,7 +72,7 @@ func main() {
 			}
 		case 6:
 			fmt.Println(reallyWannaExit)
-			input = getIntInput(scanner)
+			input = getInput(scanner)
 			switch input {
 			case 1:
 				fmt.Println(exitMessage)
@@ -93,27 +84,57 @@ func main() {
 	}
 }
 
-func adventureMode(config Config, scanner *bufio.Scanner) {
+func showTutorial(config Config, scanner *bufio.Scanner) {
+	fmt.Println(tutorial1(config.PlayerName))
+	getInput(scanner)
+	fmt.Println(tutorial2)
+	getInput(scanner)
+	fmt.Println(tutorial3)
+	getInput(scanner)
+	fmt.Println(tutorial4)
+	getInput(scanner)
+	return
+}
+
+func playGame(config *Config, scanner *bufio.Scanner) int {
 	monster := getNextMonster(config.TotalScore)
 	exp := nextExpression()
-	fmt.Println(*monster.ascii, "You see a", *monster.name)
-	fmt.Println("Health: ", monster.hp)
+	playerHealth := config.TotalScore * 10
+	fmt.Println(*monster.ascii, "\nYou see a", *monster.name, "\nMonster's health: ",
+		monster.hp, "\nYour health: ", playerHealth,
+	)
 	var input int
 	for input != -1 {
 		fmt.Println("You attack: ", exp.first, "x", exp.second)
-		input := getIntInput(scanner)
+		input := getInput(scanner)
 		if input == exp.result {
-			monster.hp -= input
+			monster.hp -= exp.result
 		} else {
 			fmt.Println("You got ", input, " of damage!")
+			playerHealth -= input
+			if playerHealth < 1 {
+				fmt.Println("You got killed!")
+				return 1
+			}
 		}
 		if monster.hp < 1 {
 			fmt.Println("The monster is elliminated!")
+			config.TotalScore += 1
+			saveConfig(config, configPath)
+			fmt.Println("Your total score was increased and now it's ", config.TotalScore)
+			monster := getNextMonster(config.TotalScore)
+			exp = nextExpression()
+			playerHealth = config.TotalScore * 10
+			fmt.Println(*monster.ascii, "\nYou see a", *monster.name, "\nMonster's health: ",
+				monster.hp, "\nYour health: ", playerHealth,
+			)
 		} else {
-			fmt.Println("Health: ", monster.hp)
+			fmt.Println("Monster's health: ", monster.hp)
+			fmt.Println("Your health: ", playerHealth)
 			exp = nextExpression()
 		}
 	}
+	return 0
 }
 
 // Returns to the starting menu
@@ -121,31 +142,17 @@ func exitGame() {
 
 }
 
-func getStrInput(scanner *bufio.Scanner) string {
-	// Print prompt
-	fmt.Print(cliName, "> ")
-	for scanner.Scan() {
-		input := cleanInput(scanner.Text())
-		if input[0] == '.' {
-			if command, exists := commands[input]; exists {
-				command.(func())()
-			}
-		} else {
-			return input
-		}
-		// Print prompt
-		fmt.Print(cliName, "> ")
-	}
-	// This normally should not happen
-	return ""
-}
+// func handleEvent() Event {}
 
-// Get next monster by considering totalScore
+// Get next monster by examining totalScore
 func getNextMonster(totalScore int) Monster {
 	chosenGroup := monsters1
-	if totalScore > 1000 {
+	if totalScore > 500 {
 		chosenGroup = monsters3
-	} else if totalScore > 300 {
+	} else if totalScore > 100 {
+		chosenGroup = monsters2
+	} else {
+		chosenGroup = monsters1
 	}
 	chosenMonster := chosenGroup[rand.Intn(len(chosenGroup))]
 	resultedMonster := Monster{
@@ -158,24 +165,15 @@ func getNextMonster(totalScore int) Monster {
 	return resultedMonster
 }
 
-func getIntInput(scanner *bufio.Scanner) int {
+// Only for int (it's done on purpose)
+func getInput(scanner *bufio.Scanner) int {
 	// Print prompt
-	fmt.Print(cliName, "> ")
-	for scanner.Scan() {
-		input := cleanInput(scanner.Text())
-		if number, err := strconv.Atoi(input); err == nil {
-			return number
-		} else if input[0] == '.' {
-			if command, exists := commands[input]; exists {
-				command.(func())()
-			}
-		} else {
-			fmt.Println("???")
-		}
-		// Print prompt
-		fmt.Print(cliName, "> ")
+	fmt.Print(promptLine)
+	scanner.Scan()
+	input := cleanInput(scanner.Text())
+	if number, err := strconv.Atoi(input); err == nil {
+		return number
 	}
-	// This normally should not happen
 	return 0
 }
 
@@ -185,10 +183,10 @@ func getConfig(path string) Config {
 		// User runs game without config
 		initialConfig := Config{
 			PlayerName: initialName,
-			TotalScore: 0,
+			TotalScore: 1,
 		}
 		// Try to save
-		err = saveConfig(initialConfig, path)
+		err = saveConfig(&initialConfig, path)
 		if err != nil {
 			panic("Cannot save config file")
 		}
@@ -230,13 +228,13 @@ func cleanInput(text string) string {
 	return output
 }
 
-func saveConfig(cfg Config, path string) error {
+func saveConfig(cfg *Config, path string) error {
 	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return toml.NewEncoder(f).Encode(cfg)
+	return toml.NewEncoder(f).Encode(*cfg)
 }
 
 func readConfig(path string) (Config, error) {

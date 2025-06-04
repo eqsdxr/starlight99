@@ -1,7 +1,9 @@
 package main
 
+import "fmt"
+
 type Config struct {
-	PlayerName string
+	PlayerName int
 	TotalScore int
 }
 
@@ -19,22 +21,41 @@ type Expression struct {
 	first, second, result int
 }
 
+type Event struct {
+	text                             string
+	eventType, optValue, probability int
+}
+
 var (
+	miss                   = 1
+	additionalDamage       = 2
+	unexpectedHealing      = 3
+	totalScoreIncreased    = 4
+	accidentalMonsterDeath = 5
+	accidentalPlayerDeath  = 6
+
+	missEvent                   = Event{"You missed!", miss, 0, 10}
+	criticalDamageEvent         = Event{"Additional damage to the opponent!", additionalDamage, 3, 20}
+	totalScoreIncreasedEvent    = Event{"Your total score accidently increased!", totalScoreIncreased, 0, 100}
+	accidentalMonsterDeathEvent = Event{"The monster unexpectedly died!", accidentalMonsterDeath, 0, 1000}
+	accidentalPlayerDeathEvent  = Event{"The character accidently died!", accidentalPlayerDeath, 0, 10000}
 
 	configPath string = "/home/ivan/.local/share/starlight99.toml"
 
-	cliName string = "starlight99"
-	initialName = "AnonymousPlayer"
+	cliName     string = "starlight99"
+	initialName        = 99
 
-	Reset = "\033[0m"
-	Red = "\033[31m"
-	Green = "\033[32m"
-	Yellow = "\033[33m"
-	Blue = "\033[34m"
+	Reset   = "\033[0m"
+	Red     = "\033[31m"
+	Green   = "\033[32m"
+	Yellow  = "\033[33m"
+	Blue    = "\033[34m"
 	Magenta = "\033[35m"
-	Cyan = "\033[36m"
-	Gray = "\033[37m"
-	White = "\033[97m"
+	Cyan    = "\033[36m"
+	Gray    = "\033[37m"
+	White   = "\033[97m"
+
+	promptLine string = fmt.Sprintf("\n\n%s> ", cliName)
 
 	startingMenu string = `
 Welcome to Starlight99 my dear wanderer! Choose an option:
@@ -46,34 +67,70 @@ Welcome to Starlight99 my dear wanderer! Choose an option:
 Do you want to exit the game?
 1. Yes
 2. No
-	`
+`
 	exitMessage string = `
 Exiting...
-	`
+`
 	gameModeMenu string = `
 Choose the game mode:
 1. Adventure
-2. Company
+2. Show tutorial
 3. Go back
-	`
+`
+
+	tutorial1 = func(playerName int) string { return fmt.Sprintf(
+"\n\n" + `Hello %d, Welcome to %s!` +
+"\n\n" + `This is a short tutorial before you start.` +
+"\n\n" + `To continue, press <Enter>`, playerName, cliName,
+)}
+
+	tutorial2 string = `
+On your journey, you have fought countless monsters. You're
+really strong so they shouldn't be a big problem in a normal
+situation (except for a few weird ones). But it's not quite the case for you.
+You're actually a bit mental and every time you need to make a hit, you force
+yourself to count some random numbers in your head, you already tried
+hundreds of methods to stop that and the only result you got was that
+numbers are not float anymore (!).
+`
+
+	tutorial3 string = `
+Once you discovered and started coping with this special side of yours, you have found
+methods how to do it faster and easier. For example, you fight a regular bat
+and when you're going to make a punch, a combination 59*71 suddenly appears in you head.
+To count the result, you can use the following algorithm:
+
+5 * 7 = 35
+5*1 + 9*7 = 68
+9 * 1 = 9
+
++___9
++_68
++35
+=4189
+
+Which makes 4189 damage to a poor bat! (But be careful. If you're unlucky enough to make a careless mistake
+it will be you who gets these 4189 damage (don't ask why, I don't know).)
+`
+
+	tutorial4 string = `
+So this is the end. Good luck, and have fun!
+`
+
 	changingCharacterName string = `
-Write new name for your character:
-	`
+Write new name for your character (numbers only):
+`
 	settingsMenu string = `
 1. Change the character's name
 2. Change config file location
 3. View stats
 4. About
 5. Go back
-	`
-	helpMessage string = `
-Available commands:
-\\help - show this text
-\\exit - exit the program
-	`
+`
+
 	startingAdventureModeText string = `
 You're starting an adventure mode.
-	`
+`
 
 	monsters1 = []rawMonster{bearMonster, batMonster, scorpionMonster, spiderMonster, ravenMonster}
 	monsters2 = []rawMonster{centaurMonster, gryphonMonster, grimReaperMonster, unicornMonster, phoenixMonster, devilMonster}
@@ -85,22 +142,22 @@ You're starting an adventure mode.
 	}
 
 	starDevilMonster = rawMonster{starDevil, "Star Devil", 100000, 100000, 100000, 100000}
-	skeletonMonster = rawMonster{skeleton, "Skeleton", 40000, 70000, 15000, 30000}
-	dragonMonster = rawMonster{dragon, "Dragon", 10000, 30000, 5000, 7000}
-	foxMonster = rawMonster{fox, "Fox", 5000, 10000, 1000, 5000}
+	skeletonMonster  = rawMonster{skeleton, "Skeleton", 40000, 70000, 15000, 30000}
+	dragonMonster    = rawMonster{dragon, "Dragon", 10000, 30000, 5000, 7000}
+	foxMonster       = rawMonster{fox, "Fox", 5000, 10000, 1000, 5000}
 
-	devilMonster = rawMonster{devil, "Devil", 40000, 70000, 15000, 30000}
-	phoenixMonster = rawMonster{phoenix, "Phoenix", 40000, 70000, 15000, 30000}
-	unicornMonster = rawMonster{unicorn, "Unicorn", 40000, 70000, 15000, 30000}
+	devilMonster      = rawMonster{devil, "Devil", 40000, 70000, 15000, 30000}
+	phoenixMonster    = rawMonster{phoenix, "Phoenix", 40000, 70000, 15000, 30000}
+	unicornMonster    = rawMonster{unicorn, "Unicorn", 40000, 70000, 15000, 30000}
 	grimReaperMonster = rawMonster{grimReaper, "Grim Reaper", 40000, 70000, 15000, 30000}
-	gryphonMonster = rawMonster{gryphon, "Gryphon", 40000, 70000, 15000, 30000}
-	centaurMonster = rawMonster{centaur, "Centaur", 40000, 70000, 15000, 30000}
+	gryphonMonster    = rawMonster{gryphon, "Gryphon", 40000, 70000, 15000, 30000}
+	centaurMonster    = rawMonster{centaur, "Centaur", 40000, 70000, 15000, 30000}
 
-	spiderMonster = rawMonster{spider, "Spider", 500, 1500, 70, 120}
-	bearMonster = rawMonster{bear, "Bear", 2000, 5000, 200, 400}
+	spiderMonster   = rawMonster{spider, "Spider", 500, 1500, 70, 120}
+	bearMonster     = rawMonster{bear, "Bear", 2000, 5000, 200, 400}
 	scorpionMonster = rawMonster{scorpion, "Scorpion", 150, 350, 30, 70}
-	ravenMonster = rawMonster{raven, "Raven", 40000, 70000, 15000, 30000}
-	batMonster = rawMonster{bat, "Bat", 50, 150, 5, 15}
+	ravenMonster    = rawMonster{raven, "Raven", 40000, 70000, 15000, 30000}
+	batMonster      = rawMonster{bat, "Bat", 50, 150, 5, 15}
 
 	// https://patorjk.com/software/taag/#p=display&f=ANSI%20Regular&t=
 	logo string = Red + `
@@ -116,7 +173,7 @@ You're starting an adventure mode.
 	      ░                 ░  ░   ░         ░  ░ ░        ░  ░  ░  ░
 	
 	` + Reset
-	
+
 	// https://www.asciiart.eu/mythology/devils
 	starDevil string = `
 	
@@ -146,7 +203,7 @@ You're starting an adventure mode.
 	                                   VV
 	
 	`
-	
+
 	// https://www.asciiart.eu/mythology/skeletons
 	skeleton string = `
 	                              _.--""-._
@@ -189,7 +246,7 @@ You're starting an adventure mode.
 	                                             |||||  -nabis
 	
 	`
-	
+
 	// https://www.asciiart.eu/mythology/dragons
 	dragon string = `
 	
@@ -211,7 +268,7 @@ You're starting an adventure mode.
 	                  (vvv(VVV)(VVV)vvv)
 	                                                -???
 	`
-	
+
 	// https://emojicombos.com/kawaii-anime-girl-ascii-art
 	fox string = `
 	                        ⠉⠙⠻⢿⣛⣋⠉⠉⠉⠉⠉⠒⠲⠤⣤⢾⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -244,7 +301,7 @@ You're starting an adventure mode.
 	⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠁⠀⠀⠀⠀⠉⠙⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀-???
 	
 	`
-	
+
 	// https://www.asciiart.eu/mythology/devils
 	devil string = `
 	
@@ -289,7 +346,7 @@ You're starting an adventure mode.
 	                      ( )( ))( ( ( ) )( ) (()      -???
 	
 	`
-	
+
 	// https://www.asciiart.eu/mythology/unicorns
 	unicorn string = `
 	
@@ -358,7 +415,7 @@ You're starting an adventure mode.
 	'''  '   '''
 	
 	`
-	
+
 	// https://www.asciiart.eu/mythology/centaurs
 	centaur string = `
 	
@@ -394,7 +451,7 @@ You're starting an adventure mode.
 	jgs     \)           (/'
 	
 	`
-	
+
 	// https://www.asciiart.eu/animals/bears
 	bear string = `
 	
@@ -440,7 +497,7 @@ You're starting an adventure mode.
 		jgs  /.-'     "     '-.\
 		
 	`
-	
+
 	// https://www.asciiart.eu/mythology/phoenix
 	raven string = `
 	
