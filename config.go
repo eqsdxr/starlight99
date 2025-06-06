@@ -8,38 +8,25 @@ type Config struct {
 }
 
 type rawMonster struct {
-	ascii, name                        string
-	hpMin, hpMax, damageMin, damageMax int
+	ASCII, Name                        string
+	HPMin, HPMax, DamageMin, DamageMax int
 }
 
 type Monster struct {
-	ascii, name              *string
-	hp, damageMin, damageMax int
+	ASCII, Name              *string
+	HP, DamageMin, DamageMax int
 }
 
 type Expression struct {
-	first, second, result int
+	First, Second, Result int
 }
 
 type Event struct {
-	text                             string
-	eventType, optValue, probability int
+	Text                        string
+	Type, OptValue, Probability int
 }
 
 var (
-	miss                   = 1
-	additionalDamage       = 2
-	unexpectedHealing      = 3
-	totalScoreIncreased    = 4
-	accidentalMonsterDeath = 5
-	accidentalPlayerDeath  = 6
-
-	missEvent                   = Event{"You missed!", miss, 0, 10}
-	criticalDamageEvent         = Event{"Additional damage to the opponent!", additionalDamage, 3, 20}
-	totalScoreIncreasedEvent    = Event{"Your total score accidently increased!", totalScoreIncreased, 0, 100}
-	accidentalMonsterDeathEvent = Event{"The monster unexpectedly died!", accidentalMonsterDeath, 0, 1000}
-	accidentalPlayerDeathEvent  = Event{"The character accidently died!", accidentalPlayerDeath, 0, 10000}
-
 	configPath string = "/home/ivan/.local/share/starlight99.toml"
 
 	cliName     string = "starlight99"
@@ -55,31 +42,51 @@ var (
 	Gray    = "\033[37m"
 	White   = "\033[97m"
 
+	empty                  = 0
+	miss                   = 1
+	additionalDamage       = 2
+	unexpectedHealing      = 3
+	totalScoreIncreased    = 4
+	accidentalMonsterDeath = 5
+	accidentalPlayerDeath  = 6
+
+	emptyEvent                  = Event{"", 0, empty, 0}
+	missEvent                   = Event{Gray + "You missed!" + Reset, miss, 0, 10}
+	criticalDamageEvent         = Event{Yellow + "Additional damage to the opponent!" + Reset, additionalDamage, 3, 20}
+	totalScoreIncreasedEvent    = Event{Green + "Your total score accidently increased!" + Reset, totalScoreIncreased, 0, 99}
+	accidentalMonsterDeathEvent = Event{"The monster suddenly died!", accidentalMonsterDeath, 0, 100}
+	accidentalPlayerDeathEvent  = Event{Red + "The character suddenly died!" + Reset, accidentalPlayerDeath, 0, 10000}
+
+	// Don't add emptyEvent to eventList since there's no point in it
+	// It is sorted in a *decreasing* order
+	eventList = []Event{accidentalPlayerDeathEvent, accidentalMonsterDeathEvent, totalScoreIncreasedEvent,
+		criticalDamageEvent, missEvent}
+
 	promptLine string = fmt.Sprintf("\n\n%s> ", cliName)
 
 	welcomeMessage string = `
-Welcome to Starlight99 my dear wanderer!
-`
-	startingMenu string = "\n\n" + `
+
+Welcome to Starlight99 dear wanderer!`
+	startingMenu string = `
+
 Choose an option:
 1. Play
 2. Settings
-3. Exit
-`
+3. Exit`
 	reallyWannaExit string = `
+
 Do you really want to exit?
 1. Yes
-2. No
-`
+2. No`
 	exitMessage string = `
-Exiting...
-`
+
+Exiting...`
 	gameModeMenu string = `
+
 Choose the game mode:
 1. Adventure Mode
 2. Show tutorial
-3. Go back
-`
+3. Go back`
 
 	tutorial1 = func(playerName int) string {
 		return fmt.Sprintf(
@@ -90,16 +97,17 @@ Choose the game mode:
 	}
 
 	tutorial2 string = `
+
 On your journey, you have fought countless monsters. You're
 really strong so they shouldn't be a big problem in a normal
 situation (except for a few weird ones). But it's not quite the case for you.
 You're actually a bit mental and every time you need to make a hit, you force
 yourself to count some random numbers in your head, you already tried
 hundreds of methods to stop that and the only result you got was that
-numbers are not float anymore (!).
-`
+numbers are not float anymore (!).`
 
 	tutorial3 string = `
+
 Once you discovered and started coping with this special side of yours, you have found
 methods how to do it faster and easier. For example, you fight a regular bat
 and when you're going to make a punch, a combination 59*71 suddenly appears in you head.
@@ -115,23 +123,27 @@ To count the result, you can use the following algorithm:
 =4189
 
 Which makes 4189 damage to a poor bat! (But be careful. If you're unlucky enough to make a careless mistake
-it will be you who gets these 4189 damage (don't ask why, I don't know).)
-`
+it will be you who gets these 4189 damage (don't ask why, I don't know).)`
 
 	tutorial4 string = `
-So this is the end. Good luck, and have fun!
+
+So this is the end. Good luck, and have fun!`
+
+	yesNo string = `
+	Yes
 `
 
 	changingCharacterName string = `
-Write new name for your character (numbers only):
-`
+
+Write new name for your character (numbers only):`
+
 	settingsMenu string = `
+
 1. Change the character's name
-2. Change config file location
+2. 
 3. View stats
 4. About
-5. Go back
-`
+5. Go back`
 
 	monsters1 = []rawMonster{bearMonster, batMonster, scorpionMonster, spiderMonster, ravenMonster}
 	monsters2 = []rawMonster{centaurMonster, gryphonMonster, grimReaperMonster, unicornMonster, phoenixMonster, devilMonster}
@@ -146,7 +158,7 @@ Write new name for your character (numbers only):
 	skeletonMonster  = rawMonster{skeleton, "Skeleton", 8000, 10000, 400, 800}
 	dragonMonster    = rawMonster{dragon, "Dragon", 7000, 9000, 350, 700}
 	foxMonster       = rawMonster{fox, "Fox", 6000, 8000, 300, 600}
-	
+
 	devilMonster      = rawMonster{devil, "Devil", 3000, 5000, 200, 400}
 	phoenixMonster    = rawMonster{phoenix, "Phoenix", 3000, 5000, 200, 400}
 	unicornMonster    = rawMonster{unicorn, "Unicorn", 3000, 5000, 200, 400}
@@ -162,7 +174,6 @@ Write new name for your character (numbers only):
 
 	// https://patorjk.com/software/taag/#p=display&f=ANSI%20Regular&t=
 	logo string = Red + `
-	
 	  ██████ ▄▄▄█████▓ ▄▄▄       ██▀███   ██▓     ██▓  ▄████  ██░ ██ ▄▄▄█████▓  ████████     ████████ 
 	▒██    ▒ ▓  ██▒ ▓▒▒████▄    ▓██ ▒ ██▒▓██▒    ▓██▒ ██▒ ▀█▒▓██░ ██▒▓  ██▒ ▓▒ ██    █▒░░   ██    █▒░░
 	░ ▓██▄   ▒ ▓██░ ▒░▒██  ▀█▄  ▓██ ░▄█ ▒▒██░    ▒██▒▒██░▄▄▄░▒██▀▀██░▒ ▓██░ ▒░  ▓██▄ ██░     ▓██▄ ██░
@@ -172,7 +183,6 @@ Write new name for your character (numbers only):
 	░ ░▒  ░ ░    ░      ▒   ▒▒ ░  ░▒ ░ ▒░░ ░ ▒  ░ ▒ ░  ░   ░  ▒ ░▒░ ░    ░       ▒ ░░░▒  ░   ▒ ░░░▒  ░
 	░  ░  ░    ░        ░   ▒     ░░   ░   ░ ░    ▒ ░░ ░   ░  ░  ░░ ░  ░        ▒  ░  ░     ▒  ░  ░
 	      ░                 ░  ░   ░         ░  ░ ░        ░  ░  ░  ░
-	
 	` + Reset
 
 	// https://www.asciiart.eu/mythology/skeletons
@@ -202,12 +212,11 @@ Write new name for your character (numbers only):
     \_  \          /,L]     /
       '-_'-,       ' '   ./'
          '-(_            )
-             ^^\..___,.--'
-
-`
+             ^^\..___,.--'`
 
 	// https://www.asciiart.eu/mythology/devils
 	starDevil string = `
+
 	            ._                                            ,
 	             (')..                                    ,.-')
 	              (',.)-..                            ,.-(..')
@@ -231,11 +240,11 @@ Write new name for your character (numbers only):
 	                                |  \  /|
 	                                 \~ | V             - JGG
 	                                  \  |
-	                                   VV
-	`
+	                                   VV`
 
 	// https://www.asciiart.eu/mythology/skeletons
 	skeleton string = `
+
 	                              _.--""-._
 	  .                         ."         ".
 	 / \    ,^.         /(     Y             |      )\
@@ -273,11 +282,11 @@ Write new name for your character (numbers only):
 	                                            (| |
 	                                             |  \
 	                                             |lllj
-	                                             |||||  -nabis
-	`
+	                                             |||||  -nabis`
 
 	// https://www.asciiart.eu/mythology/dragons
 	dragon string = `
+
 	                 ___====-_  _-====___
 	           _--^^^#####//      \\#####^^^--_
 	        _-^##########// (    ) \\##########^-_
@@ -293,11 +302,11 @@ Write new name for your character (numbers only):
 	   '   '  '      '   / | |  | | \   '      '  '   '
 	                    (  | |  | |  )
 	                   __\ | |  | | /__
-	                  (vvv(VVV)(VVV)vvv)           -???
-`
+	                  (vvv(VVV)(VVV)vvv)           -???`
 
 	// https://emojicombos.com/kawaii-anime-girl-ascii-art
 	fox string = `
+
 	                        ⠉⠙⠻⢿⣛⣋⠉⠉⠉⠉⠉⠒⠲⠤⣤⢾⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 	⠀⠀⠀⠀⠀⠀⠀⢀⡤⠴⠒⠒⠒⠒⠒⠦⢤⣀⠀⠀⠀⠀⠀⠀⢀⣠⠤⠒⠉⠁⠀⠀⠀⠀⠀⠀⠀⡴⡱⣿⠦⡀⠀⢀⠤⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 	⠀⠀⠀⠀⠀⢀⡜⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠦⡉⠒⣺⠭⠅⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡜⡑⠀⡿⠀⠈⠞⠁⡘⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -326,12 +335,11 @@ Write new name for your character (numbers only):
 	⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⡿⢷⡤⣿⢤⠀⠀⠀⠀⢀⡤⣧⣄⣼⣽⣽⠀⠀⢳⠀⠀⢳⡢⠧⠌⠒⠤⢄⣀⡀⠀⠈⠑⠤⢀⣀⣀⠠⠀⠀⠀⠀
 	⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠧⡼⠧⠼⠼⠀⠀⠀⠀⢿⣰⡇⢸⡆⣹⠀⠀⠀⠸⡄⠀⢄⢹⠓⡄⠀⠀⠀⠀⠈⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀
 	⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠁⠀⠀⠀⠀⠉⠙⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀-???
-	
 	`
 
 	// https://www.asciiart.eu/mythology/devils
 	devil string = `
-	
+
 	   ,    ,    /\   /\
 	  /( /\ )\  _\ \_/ /_
 	  |\_||_/| < \_   _/ >
@@ -341,12 +349,11 @@ Write new name for your character (numbers only):
 	     {}   \  \_____/  /
 	     ()   /\   )=(   /\
 	jgs  {}  /  \_/\=/\_/  \
-	
 	`
 
 	// https://www.asciiart.eu/mythology/phoenix
 	phoenix string = `
-	
+
 	                (                           )
 	          ) )( (                           ( ) )( (
 	       ( ( ( )  ) )                     ( (   (  ) )(
@@ -371,12 +378,11 @@ Write new name for your character (numbers only):
 	                  ((                           ))
 	                    ((                       ((
 	                      ( )( ))( ( ( ) )( ) (()      -???
-	
 	`
 
 	// https://www.asciiart.eu/mythology/unicorns
 	unicorn string = `
-	
+
 	\.
 	 \\      .
 	  \\ _,.+;)_
@@ -396,13 +402,11 @@ Write new name for your character (numbers only):
 	         ; !          .' .'         : |
 	        ,' ;         ' .'           ; (
 	       .  (         j  (            '  \
-	       """'          ""'             '"" mh
-	
-	`
+	       """'          ""'             '"" mh`
 
 	// https://www.asciiart.eu/mythology/grim-reapers
 	grimReaper string = `
-	
+
 	             ___
 	            /   \\
 	       /\\ | . . \\
@@ -420,12 +424,11 @@ Write new name for your character (numbers only):
 	           |        |
 	           |_________\
 	     from Dustin Slater
-	
 	`
 
 	// https://www.asciiart.eu/mythology/gryphon
 	gryphon string = `
-	
+
 	                        ______
 	             ______,---'__,---'
 	         _,-'---_---__,---'
@@ -440,12 +443,11 @@ Write new name for your character (numbers only):
 	  __//   __;_'-  \ ';.__,;'
 	((,--,) (((,------;  '--' jv
 	'''  '   ''',
-	
 	`
 
 	// https://www.asciiart.eu/mythology/centaurs
 	centaur string = `
-	
+
 	  <=======]}======
 	    --.   /|
 	   _\"/_.'/
@@ -455,9 +457,7 @@ Write new name for your character (numbers only):
 	    |          \\
 	   : /-\ .'-'\ / |
 	snd \\, ||    \|
-	     \/ ||    ||
-	
-	`
+	     \/ ||    ||`
 
 	// https://www.asciiart.eu/animals/spiders
 	spider string = `
@@ -475,9 +475,7 @@ Write new name for your character (numbers only):
       // /.-(() ())-.\ \\
      (\ |)   '---'   (| /)
       ' (|           |) '
-jgs     \)           (/'
-
-	`
+jgs     \)           (/'`
 
 	// https://www.asciiart.eu/animals/bears
 	bear string = `
@@ -493,9 +491,7 @@ jgs     \)           (/'
   / (        /     \
   \  \      (      /
    )  '._____)    /
-(((____.--(((____/mrf
-
-	`
+(((____.--(((____/mrf`
 
 	// https://www.asciiart.eu/animals/scorpions
 	scorpion string = `
@@ -511,9 +507,7 @@ jgs     \)           (/'
          \ || /  _)
            ||   ( )
       Max  \\___//
-            '---'
-
-	`
+            '---'`
 
 	// https://www.asciiart.eu/animals/bats
 	bat string = `
@@ -521,9 +515,7 @@ jgs     \)           (/'
        (_    ,_,    _)
        / ''--) (--'' \
       /  _,-'\_/'-,_  \
-jgs  /.-'     "     '-.\
-
-	`
+jgs  /.-'     "     '-.\`
 
 	// https://www.asciiart.eu/mythology/phoenix
 	raven string = `
@@ -533,7 +525,5 @@ _,'    \_>\_/    ',_
 .7,     {  }     ,\.
  '/:,  .m  m.  ,:\'
    ')",(/  \),"('
-      '{'!!'}'      -???
-
-	`
+      '{'!!'}'      -???`
 )
