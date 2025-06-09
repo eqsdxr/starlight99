@@ -3,22 +3,18 @@ package main
 import "fmt"
 
 type Config struct {
-	PlayerName int
-	TotalScore int
-}
-
-type rawMonster struct {
-	ASCII, Name                        string
-	HPMin, HPMax, DamageMin, DamageMax int
+	PlayerName int `json:"playername"`
+	TotalScore int `json:"totalscore"`
+	Deaths     int `json:"deaths"`
 }
 
 type Monster struct {
-	ASCII, Name              *string
-	HP, DamageMin, DamageMax int
+	ASCII, Name                            string
+	HP, HPMin, HPMax, DamageMin, DamageMax int
 }
 
 type Expression struct {
-	First, Second, Result int
+	First, Second, Result, Damage int
 }
 
 type Event struct {
@@ -27,7 +23,12 @@ type Event struct {
 }
 
 var (
-	configPath string = "/home/ivan/.local/share/starlight99.toml"
+	initialConfig = Config{
+		PlayerName: initialName,
+		TotalScore: 1,
+	}
+
+	configPath string = "/home/ivan/.local/share/starlight99.json"
 
 	cliName     string = "starlight99"
 	initialName        = 99
@@ -122,16 +123,13 @@ To count the result, you can use the following algorithm:
 +35
 =4189
 
-Which makes 4189 damage to a poor bat! (But be careful. If you're unlucky enough to make a careless mistake
-it will be you who gets these 4189 damage (don't ask why, I don't know).)`
+Which makes 4189 damage to a poor bat! But be careful. If you're unlucky enough to make a careless mistake
+it will be you who gets these 4189 damage (don't ask why, I don't know). By the way, if you want to escape a battle,
+use -1.`
 
 	tutorial4 string = `
 
 So this is the end. Good luck, and have fun!`
-
-	yesNo string = `
-	Yes
-`
 
 	changingCharacterName string = `
 
@@ -140,40 +138,46 @@ Write new name for your character (numbers only):`
 	settingsMenu string = `
 
 1. Change the character's name
-2. 
-3. View stats
-4. About
-5. Go back`
+2. View stats
+3. About
+4. Go back`
 
-	monsters1 = []rawMonster{bearMonster, batMonster, scorpionMonster, spiderMonster, ravenMonster}
-	monsters2 = []rawMonster{centaurMonster, gryphonMonster, grimReaperMonster, unicornMonster, phoenixMonster, devilMonster}
-	monsters3 = []rawMonster{starDevilMonster, skeletonMonster, dragonMonster, foxMonster}
+	about string = `
+For all additional information refer to the source code:
 
-	allMonsters = func() []rawMonster {
+https://github.com/eqsdxr/starlight99
+`
+
+	monsters1 = []Monster{bearMonster, batMonster, scorpionMonster, spiderMonster, ravenMonster}
+	monsters2 = []Monster{centaurMonster, gryphonMonster, grimReaperMonster, unicornMonster, phoenixMonster, devilMonster}
+	monsters3 = []Monster{starDevilMonster, skeletonMonster, dragonMonster, foxMonster}
+
+	allMonsters = func() []Monster {
 		all := append(monsters1, monsters2...)
 		return append(all, monsters3...)
 	}
 
-	starDevilMonster = rawMonster{starDevil, "Star Devil", 10000, 12000, 500, 1000}
-	skeletonMonster  = rawMonster{skeleton, "Skeleton", 8000, 10000, 400, 800}
-	dragonMonster    = rawMonster{dragon, "Dragon", 7000, 9000, 350, 700}
-	foxMonster       = rawMonster{fox, "Fox", 6000, 8000, 300, 600}
+	starDevilMonster = Monster{starDevil, "Star Devil", 0, 10000, 12000, 500, 1000}
+	skeletonMonster  = Monster{skeleton, "Skeleton", 0, 8000, 10000, 400, 800}
+	dragonMonster    = Monster{dragon, "Dragon", 0, 7000, 9000, 350, 700}
+	foxMonster       = Monster{fox, "Fox", 0, 6000, 8000, 300, 600}
 
-	devilMonster      = rawMonster{devil, "Devil", 3000, 5000, 200, 400}
-	phoenixMonster    = rawMonster{phoenix, "Phoenix", 3000, 5000, 200, 400}
-	unicornMonster    = rawMonster{unicorn, "Unicorn", 3000, 5000, 200, 400}
-	grimReaperMonster = rawMonster{grimReaper, "Grim Reaper", 3200, 5200, 220, 450}
-	gryphonMonster    = rawMonster{gryphon, "Gryphon", 3400, 5400, 250, 470}
-	centaurMonster    = rawMonster{centaur, "Centaur", 3500, 5500, 250, 500}
+	devilMonster      = Monster{devil, "Devil", 0, 3000, 5000, 200, 400}
+	phoenixMonster    = Monster{phoenix, "Phoenix", 0, 3000, 5000, 200, 400}
+	unicornMonster    = Monster{unicorn, "Unicorn", 0, 3000, 5000, 200, 400}
+	grimReaperMonster = Monster{grimReaper, "Grim Reaper", 0, 3200, 5200, 220, 450}
+	gryphonMonster    = Monster{gryphon, "Gryphon", 0, 3400, 5400, 250, 470}
+	centaurMonster    = Monster{centaur, "Centaur", 0, 3500, 5500, 250, 500}
 
-	bearMonster     = rawMonster{bear, "Bear", 600, 900, 40, 80}
-	spiderMonster   = rawMonster{spider, "Spider", 300, 500, 20, 40}
-	scorpionMonster = rawMonster{scorpion, "Scorpion", 200, 400, 15, 30}
-	ravenMonster    = rawMonster{raven, "Raven", 150, 300, 10, 20}
-	batMonster      = rawMonster{bat, "Bat", 100, 200, 5, 10}
+	bearMonster     = Monster{bear, "Bear", 0, 600, 900, 40, 80}
+	spiderMonster   = Monster{spider, "Spider", 0, 300, 500, 20, 40}
+	scorpionMonster = Monster{scorpion, "Scorpion", 0, 200, 400, 15, 30}
+	ravenMonster    = Monster{raven, "Raven", 0, 150, 300, 10, 20}
+	batMonster      = Monster{bat, "Bat", 0, 100, 200, 5, 10}
 
 	// https://patorjk.com/software/taag/#p=display&f=ANSI%20Regular&t=
 	logo string = Red + `
+
 	  ██████ ▄▄▄█████▓ ▄▄▄       ██▀███   ██▓     ██▓  ▄████  ██░ ██ ▄▄▄█████▓  ████████     ████████ 
 	▒██    ▒ ▓  ██▒ ▓▒▒████▄    ▓██ ▒ ██▒▓██▒    ▓██▒ ██▒ ▀█▒▓██░ ██▒▓  ██▒ ▓▒ ██    █▒░░   ██    █▒░░
 	░ ▓██▄   ▒ ▓██░ ▒░▒██  ▀█▄  ▓██ ░▄█ ▒▒██░    ▒██▒▒██░▄▄▄░▒██▀▀██░▒ ▓██░ ▒░  ▓██▄ ██░     ▓██▄ ██░
@@ -186,7 +190,7 @@ Write new name for your character (numbers only):`
 	` + Reset
 
 	// https://www.asciiart.eu/mythology/skeletons
-	death string = `\n\n
+	death string = `
 
                            ,--.
                           {    }

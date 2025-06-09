@@ -2,90 +2,92 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"unicode"
+)
 
-	"github.com/BurntSushi/toml"
+type GameState int
+
+const (
+	GameStartLogo GameState = iota
+	GameStartNoLogo
+	ChoosingGameMode
+	PlayingAdventureMode
+	Settings
+	Exiting
+	Tutorial
 )
 
 func main() {
 
-	clearScreen()
-
 	config := getConfig(configPath)
 	scanner := bufio.NewScanner(os.Stdin)
 
-	// 0 start menu with logo
-	// 1 start menu without logo
-	// 2 choosing game mode
-	// 3 playing adventure mode
-	// 4 settings
-	// 6 exiting
-	// 7 tutorial
-	state := 0
+	State := GameStartLogo
 	var input int
 
 	for {
-		switch state {
-		case 0:
+		switch State {
+		case GameStartLogo:
 			fmt.Print(logo, starDevil, welcomeMessage)
-			state = 1
-		case 1:
+			State = GameStartNoLogo
+		case GameStartNoLogo:
 			fmt.Print(startingMenu)
 			input = getInput(scanner)
 			switch input {
 			case 1:
-				state = 2
+				State = ChoosingGameMode
 			case 2:
-				state = 4
+				State = Settings
 			case 3:
-				state = 6
+				State = Exiting
 			}
-		case 2:
+		case ChoosingGameMode:
 			fmt.Print(gameModeMenu)
 			input = getInput(scanner)
 			switch input {
 			case 1:
-				state = 3
+				State = PlayingAdventureMode
 			case 2:
-				state = 7
+				State = Tutorial
 			case 3:
-				state = 1
+				State = GameStartNoLogo
 			}
-		case 3:
+		case PlayingAdventureMode:
 			if config.TotalScore <= 1 {
-				showTutorial(&config, scanner)
+				showTutorial(config, scanner)
 				fmt.Print("\nWould you like to choose a name for the character?",
 					"(you can change it later in settings)\n1.Yes\n2.No")
 				input := getInput(scanner)
 				if input == 1 {
-					changeCharacterName(&config, scanner)
+					changeCharacterName(config, scanner)
 				}
 			}
-			res := playGame(&config, scanner)
+			res := playGame(config, scanner)
 			switch res {
-			case 1: // Death
-				state = 1
-			case 0: // A player has left
-				state = 1
+			case 0 | 1: // Death or a player has left
+				State = GameStartLogo
 			}
-		case 4:
+		case Settings:
 			fmt.Print(settingsMenu)
 			input = getInput(scanner)
 			switch input {
 			case 1:
-				changeCharacterName(&config, scanner)
+				changeCharacterName(config, scanner)
+			case 2:
+				printStats(config, scanner)
 			case 3:
-				fmt.Printf("\n%v", config)
-			case 5:
-				state = 1
+				printAbout(scanner)
+			case 4:
+				State = GameStartNoLogo
 			}
-		case 6:
+		case Exiting:
 			fmt.Print(reallyWannaExit)
 			input = getInput(scanner)
 			switch input {
@@ -93,16 +95,31 @@ func main() {
 				fmt.Print(exitMessage)
 				os.Exit(0)
 			case 2:
-				state = 1
+				State = GameStartNoLogo
 			}
-		case 7:
-			showTutorial(&config, scanner)
-			state = 2
-		default:
-			panic("\nInvalid state 1")
+		case Tutorial:
+			showTutorial(config, scanner)
+			State = ChoosingGameMode
 		}
-
 	}
+}
+
+func printAbout(scanner *bufio.Scanner) {
+	fmt.Print(about)
+	getInput(scanner)
+}
+
+func processPlayerDeath(config *Config, configPath string) {
+	fmt.Print(death)
+	config.Deaths++
+	saveConfig(config, configPath)
+}
+
+func printStats(config *Config, scanner *bufio.Scanner) {
+	fmt.Printf("\n\n\n\nPlayer's name: %d\nTotal score: %d\nDeaths: %d\n",
+		config.PlayerName, config.TotalScore, config.Deaths)
+	getInput(scanner)
+	return
 }
 
 func changeCharacterName(config *Config, scanner *bufio.Scanner) {
@@ -128,80 +145,115 @@ func showTutorial(config *Config, scanner *bufio.Scanner) {
 }
 
 func playGame(config *Config, scanner *bufio.Scanner) int {
-	monster := getNextMonster(config.TotalScore)
-	fmt.Printf("%s\nYou see a %s.", *monster.ASCII, *monster.Name)
+	monster := newMonster(config.TotalScore)
 	playerHealth := setPlayerHealth(config.TotalScore)
 	var input int
 	var exp Expression
 	var event Event
+
+	event.newEvent(config.TotalScore)
+
 	for {
-		exp = generateNextExpression()
-		fmt.Printf("\nThe monster's health: %d\nYour health: %d\nYou attack: %d x %d",
-			monster.HP, playerHealth, exp.First, exp.Second,
-		)
+		exp = generateNextExpression(config.TotalScore)
+		printStatus(*monster, playerHealth, exp)
 		input = getInput(scanner)
-		event.newEvent(config.TotalScore)
+
+		if input == -2 {
+			input = 999999
+			exp.Result = 999999
+			exp.Damage = 999999
+		}
+
 		if input == -1 {
 			break
 		} else if input == exp.Result {
-			exp.Result = calibrateDamage(exp.Result, config.TotalScore)
-			switch event.Type {
-			case empty:
-				monster.HP -= exp.Result
-			case miss:
-				// Check if event has already happened in current fight
-				if event.OptValue == 0 {
-					fmt.Print(event.Text) // How to say that the input was correct?
-					// Set flag that event has happened
-					event.OptValue = 1
-				} else {
-					monster.HP -= exp.Result
-				}
-			case additionalDamage:
-				fmt.Print(event.Text)
-				monster.HP -= exp.Result * event.OptValue
-			case totalScoreIncreased:
-				config.TotalScore += 1
-				saveConfig(config, configPath)
-				fmt.Print(event.Text)
-			case accidentalMonsterDeath:
-				fmt.Print(event.Text)
-				monster.HP -= 99999
-			case accidentalPlayerDeath:
-				fmt.Print(event.Text)
-				playerHealth -= 99999
-				if playerHealth < 1 {
-					fmt.Print(death)
-					return 1
-				}
-			}
+			handleCorrectInput(monster, &playerHealth, &event, exp, config)
 		} else {
-			playerHealth -= exp.Result
-			fmt.Print(Red+"\nYou got ", exp.Result, " of damage!"+Reset)
-			if playerHealth < 1 {
-				fmt.Print(death)
-				return 1
-			}
+			handleIncorrectInput(monster, &playerHealth, &event, exp, config)
 		}
+
+		if playerHealth < 1 {
+			processPlayerDeath(config, configPath)
+			return 1
+		}
+
 		if monster.HP < 1 {
-			fmt.Printf("\nThe monster is elliminated!")
+			event.newEvent(config.TotalScore)
+			fmt.Printf("\nThe monster is eliminated!")
 			config.TotalScore++
 			saveConfig(config, configPath)
 			fmt.Printf(Green+"\nYour total score was increased and now it equals %d"+Reset, config.TotalScore)
 			if config.TotalScore == 100 {
 				fmt.Print(Magenta + "\nYou have become much stronger" + Reset)
 			}
-			monster = getNextMonster(config.TotalScore)
+			monster = newMonster(config.TotalScore)
 			playerHealth = setPlayerHealth(config.TotalScore)
-			fmt.Printf("%s\nYou see a %s.", *monster.ASCII, *monster.Name)
+			getInput(scanner)
 		}
 	}
+
 	fmt.Print(Blue + "\nYou left..." + Reset)
 	return 0
 }
 
-func calibrateDamage(damage, totalScore int) {
+func newMonster(totalScore int) *Monster {
+	monster := getNextMonster(totalScore)
+	fmt.Printf("%s\nYou see a %s.", monster.ASCII, monster.Name)
+	return monster
+}
 
+func printStatus(monster Monster, playerHealth int, exp Expression) {
+	fmt.Printf("\nThe monster's health: %d\nYour health: %d\nYou attack: %d x %d",
+		monster.HP, playerHealth, exp.First, exp.Second)
+}
+
+func handleCorrectInput(monster *Monster, playerHealth *int, event *Event, exp Expression, config *Config) {
+	switch event.Type {
+	case empty:
+		monster.HP -= exp.Damage
+	case miss:
+		fmt.Print(event.Text)
+	case additionalDamage:
+		fmt.Print(event.Text)
+		monster.HP -= exp.Damage * 3
+	case totalScoreIncreased:
+		config.TotalScore++
+		saveConfig(config, configPath)
+		fmt.Print(event.Text)
+	case accidentalMonsterDeath:
+		fmt.Print(event.Text)
+		monster.HP = 0
+	case accidentalPlayerDeath:
+		fmt.Print(event.Text)
+		*playerHealth -= 99999
+	}
+
+	if event.Type != empty {
+		*event = emptyEvent
+	}
+}
+
+func handleIncorrectInput(monster *Monster, playerHealth *int, event *Event, exp Expression, config *Config) {
+	switch event.Type {
+	case totalScoreIncreased:
+		config.TotalScore++
+		saveConfig(config, configPath)
+		fmt.Print(event.Text)
+		*playerHealth -= exp.Result
+		fmt.Print(Red+"\nYou got ", exp.Damage, " of damage!"+Reset)
+	case accidentalMonsterDeath:
+		fmt.Print(event.Text)
+		monster.HP = 0
+	case accidentalPlayerDeath:
+		fmt.Print(event.Text)
+	default:
+		*playerHealth -= exp.Damage
+		fmt.Print(Red+"\nYou got ", exp.Damage, " of damage!"+Reset)
+	}
+
+	if event.Type != empty {
+		*event = emptyEvent
+	}
 }
 
 // Generate a battle game event (or no event) with some probability
@@ -231,17 +283,14 @@ func (event *Event) newEvent(totalScore int) {
 // Calculate and return starting player's health
 // depending on totalScore
 func setPlayerHealth(totalScore int) int {
-	// Decrease player's health
+	// Decrease player's health and prevent it go below the threshold
 	// This is kinda a rudimentary formula but whatever
-	playerHealth := 50000 - totalScore*100
-	// Prevent it go below 1000
-	playerHealth = max(playerHealth, 1000)
-	return playerHealth
+	return int(max(10000-math.Log(float64(totalScore))*1500, 500))
 }
 
 // Get next monster by examining totalScore
-func getNextMonster(totalScore int) Monster {
-	chosenGroup := monsters1
+func getNextMonster(totalScore int) *Monster {
+	var chosenGroup []Monster
 	if totalScore >= 500 {
 		chosenGroup = monsters3
 	} else if totalScore >= 100 {
@@ -250,14 +299,8 @@ func getNextMonster(totalScore int) Monster {
 		chosenGroup = monsters1
 	}
 	chosenMonster := chosenGroup[rand.Intn(len(chosenGroup))]
-	resultedMonster := Monster{
-		&chosenMonster.ASCII,
-		&chosenMonster.Name,
-		rand.Intn(chosenMonster.HPMax-chosenMonster.HPMin) + chosenMonster.HPMin,
-		chosenMonster.DamageMin,
-		chosenMonster.HPMax,
-	}
-	return resultedMonster
+	chosenMonster.HP = rand.Intn(chosenMonster.HPMax-chosenMonster.HPMin) + chosenMonster.HPMin
+	return &chosenMonster
 }
 
 // Only for int (it's done on purpose)
@@ -286,14 +329,10 @@ func getInput(scanner *bufio.Scanner) int {
 
 // Get config from saved file or create new. It panics
 // if config cannot be saved and read for some reason
-func getConfig(path string) Config {
+func getConfig(path string) *Config {
 	config, err := readConfig(path)
 	if err != nil {
 		// User runs game without config
-		initialConfig := Config{
-			PlayerName: initialName,
-			TotalScore: 1,
-		}
 		// Try to save
 		err = saveConfig(&initialConfig, path)
 		if err != nil {
@@ -308,33 +347,39 @@ func getConfig(path string) Config {
 	return config
 }
 
-func clearScreen() {
-	cmd := exec.Command("clear")
-	cmd.Stdout = os.Stdout
-	cmd.Run()
-}
-
-func generateNextExpression() Expression {
+func generateNextExpression(totalScore int) Expression {
 	f := rand.Intn(89) + 10
 	s := rand.Intn(89) + 10
-	f, s = 100, 100
-	exp := Expression{
-		f, s, f * s,
+	damage := f * s
+	// It's too big to be counted as damage
+	if totalScore < 100 {
+		damage /= 10
 	}
-	return exp
+	return Expression{
+		f, s, f * s, damage,
+	}
 }
 
 func saveConfig(cfg *Config, path string) error {
 	f, err := os.Create(path)
+	defer f.Close()
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	return toml.NewEncoder(f).Encode(*cfg)
+	jsonStr, err := json.MarshalIndent(*cfg, "", "\t")
+	if err != nil {
+		return err
+	}
+	f.Write(jsonStr)
+	return nil
 }
 
-func readConfig(path string) (Config, error) {
+func readConfig(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
 	var cfg Config
-	_, err := toml.DecodeFile(path, &cfg)
-	return cfg, err
+	err = json.Unmarshal(data, &cfg)
+	return &cfg, err
 }
