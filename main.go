@@ -12,10 +12,8 @@ import (
 	"unicode"
 )
 
-type GameState int
-
 const (
-	GameStartLogo GameState = iota
+	GameStartLogo int = iota
 	GameStartNoLogo
 	ChoosingGameMode
 	PlayingAdventureMode
