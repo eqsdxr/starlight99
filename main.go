@@ -71,7 +71,7 @@ func main() {
 			res := playGame(config, scanner)
 			switch res {
 			case 0 | 1: // Death or a player has left
-				State = GameStartLogo
+				State = GameStartNoLogo
 			}
 		case Settings:
 			fmt.Print(settingsMenu)
@@ -178,22 +178,21 @@ func playGame(config *Config, scanner *bufio.Scanner) int {
 		}
 
 		if monster.HP < 1 {
-			event.newEvent(config.TotalScore)
 			fmt.Printf("\nThe monster is eliminated!")
 			config.TotalScore++
 			saveConfig(config, configPath)
 			fmt.Printf(Green+"\nYour total score was increased and now it equals %d"+Reset, config.TotalScore)
-			if config.TotalScore == 100 {
+			if config.TotalScore == 100 || config.TotalScore == 500 {
 				fmt.Print(Magenta + "\nYou have become much stronger" + Reset)
 			}
+			event.newEvent(config.TotalScore)
 			monster = newMonster(config.TotalScore)
 			playerHealth = setPlayerHealth(config.TotalScore)
-			getInput(scanner)
 		}
 	}
 
 	fmt.Print(Blue + "\nYou left..." + Reset)
-	return 0
+	return GameStartNoLogo
 }
 
 func newMonster(totalScore int) *Monster {
@@ -220,12 +219,13 @@ func handleCorrectInput(monster *Monster, playerHealth *int, event *Event, exp E
 		config.TotalScore++
 		saveConfig(config, configPath)
 		fmt.Print(event.Text)
+		monster.HP -= exp.Damage
 	case accidentalMonsterDeath:
 		fmt.Print(event.Text)
 		monster.HP = 0
 	case accidentalPlayerDeath:
 		fmt.Print(event.Text)
-		*playerHealth -= 99999
+		*playerHealth = 0
 	}
 
 	if event.Type != empty {
@@ -246,6 +246,7 @@ func handleIncorrectInput(monster *Monster, playerHealth *int, event *Event, exp
 		monster.HP = 0
 	case accidentalPlayerDeath:
 		fmt.Print(event.Text)
+		*playerHealth = 0
 	default:
 		*playerHealth -= exp.Damage
 		fmt.Print(Red+"\nYou got ", exp.Damage, " of damage!"+Reset)
@@ -264,7 +265,7 @@ func (event *Event) newEvent(totalScore int) {
 	// overshadowed with the ones with higer probability
 	for _, e := range eventList {
 		// Rudimentary probability calculating
-		if totalScore%e.Probability == 0 {
+		if (totalScore+1)%e.Probability == 0 {
 			// Prevent overwriting
 			if event.Type != e.Type {
 				*event = e
