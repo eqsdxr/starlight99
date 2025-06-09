@@ -32,6 +32,7 @@ func main() {
 	State := GameStartLogo
 	var input int
 
+	// Main control flow loop
 	for {
 		switch State {
 		case GameStartLogo:
@@ -158,6 +159,7 @@ func playGame(config *Config, scanner *bufio.Scanner) int {
 		printStatus(*monster, playerHealth, exp)
 		input = getInput(scanner)
 
+		// Cheat code
 		if input == -2 {
 			input = 999999
 			exp.Result = 999999
@@ -304,6 +306,7 @@ func getNextMonster(totalScore int) *Monster {
 }
 
 // Only for int (it's done on purpose)
+// Stops execution until user provides input
 func getInput(scanner *bufio.Scanner) int {
 	fmt.Print(promptLine)
 	scanner.Scan()
@@ -318,6 +321,7 @@ func getInput(scanner *bufio.Scanner) int {
 			b.WriteRune(r)
 		}
 	}
+	// if input is empty it's still processed
 	input = b.String()
 
 	if number, err := strconv.Atoi(input); err == nil {
