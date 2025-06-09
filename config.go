@@ -28,7 +28,7 @@ var (
 		TotalScore: 1,
 	}
 
-	configPath string = "/home/ivan/.local/share/starlight99.json"
+	configPath string = "/home/<USER>/.local/share/starlight99.json"
 
 	cliName     string = "starlight99"
 	initialName        = 99
